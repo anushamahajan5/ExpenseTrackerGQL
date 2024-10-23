@@ -1,43 +1,46 @@
-import {users} from '../dummyData/data.js'
-import User from '../models/user.models.js';
-import bcrypt from 'bcryptjs';
-const userResolver={
-    Mutation:{
-        signUp: async(_,input,context)=>{
-            try{
-                const {username,name,password,gender}=input;
-                if(!username || !name || !password || !gender){
-                    throw new Error("All fields are required");
-                }
-                const existingUser= await User.findOne({username});
-                if(existingUser){
-                    throw new Error("User already exists");
-                }
+import Transaction from "../models/transaction.model.js";
+import User from "../models/user.model.js";
+import bcrypt from "bcryptjs";
 
-                const salt=await bcrypt.genSalt(10);
-                const hashedPassword= await bcrypt.hash(password,salt);
-                //https://avatar-placeholder.iran.liara.run/
-                const boyProfilePic=`https://avatar.iran.liara.run/public/boy?username=${username}`;
-                const girlProfilePic=`https://avatar.iran.liara.run/public/girl?username=${username}`;
-            
-                const newUser = new User({
-                    username,
-                    name,
-                    password: hashedPassword,
-                    gender,
-                    profilePicture: gender ==="male"?boyProfilePic:girlProfilePic,
-                })
+const userResolver = {
+	Mutation: {
+		signUp: async (_, { input }, context) => {
+			try {
+				const { username, name, password, gender } = input;
 
-                await newUser.save();
-                await context.login(newUser)
-                return newUser;
-            }catch(err){
-                console.error("Error in signUp: ", err);
+				if (!username || !name || !password || !gender) {
+					throw new Error("All fields are required");
+				}
+				const existingUser = await User.findOne({ username });
+				if (existingUser) {
+					throw new Error("User already exists");
+				}
+
+				const salt = await bcrypt.genSalt(10);
+				const hashedPassword = await bcrypt.hash(password, salt);
+
+				// https://avatar-placeholder.iran.liara.run/
+				const boyProfilePic = `https://avatar.iran.liara.run/public/boy?username=${username}`;
+				const girlProfilePic = `https://avatar.iran.liara.run/public/girl?username=${username}`;
+
+				const newUser = new User({
+					username,
+					name,
+					password: hashedPassword,
+					gender,
+					profilePicture: gender === "male" ? boyProfilePic : girlProfilePic,
+				});
+
+				await newUser.save();
+				await context.login(newUser);
+				return newUser;
+			} catch (err) {
+				console.error("Error in signUp: ", err);
 				throw new Error(err.message || "Internal server error");
-            }
-        },
+			}
+		},
 
-        login: async (_, { input }, context) => {
+		login: async (_, { input }, context) => {
 			try {
 				const { username, password } = input;
 				if (!username || !password) throw new Error("All fields are required");
@@ -64,9 +67,9 @@ const userResolver={
 				throw new Error(err.message || "Internal server error");
 			}
 		},
-    },
-    Query:{
-        authUser: async (_, __, context) => {
+	},
+	Query: {
+		authUser: async (_, __, context) => {
 			try {
 				const user = await context.getUser();
 				return user;
@@ -84,8 +87,8 @@ const userResolver={
 				throw new Error(err.message || "Error getting user");
 			}
 		},
-    },
-    User: {
+	},
+	User: {
 		transactions: async (parent) => {
 			try {
 				const transactions = await Transaction.find({ userId: parent._id });
@@ -96,6 +99,6 @@ const userResolver={
 			}
 		},
 	},
-}
+};
 
-export default userResolver
+export default userResolver;
